@@ -1,5 +1,9 @@
 # munkibuilds.org
 
-This repo hosts the Jenkins project configuration for [munkibuilds.org](http://munkibuilds.org), a site that makes available automatic builds of [Munki](https://code.google.com/p/munki).
+This repo hosts the configuration files for [munkibuilds.org](https://munkibuilds.org), a Jenkins job and Apache-served website that makes available automatic builds of [Munki](https://code.google.com/p/munki).
 
-There is some Apache-specific configuration that also formats the pages in a specific way, using artifacts from the Jenkins builds. This will likely be posted shortly.
+The (messy, I know) configuration files are organized in the following folders:
+
+  - `apache_vhost`: The Apache VirtualHost configuration that also defines the fancy directory listing
+  - `jenkins`: The Jenkins job configuration file
+  - `www_root`: Various HTML resources used for templating the jobs site
