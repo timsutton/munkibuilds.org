@@ -1,5 +1,5 @@
 <IfModule mod_ssl.c>
-<VirtualHost munkibuilds.org:443>
+<VirtualHost *:443>
 	ServerName munkibuilds.org
 	HostnameLookups On
 	DocumentRoot /mnt/munki_repo/builds
@@ -9,51 +9,34 @@
 	SSLCertificateKeyFile /etc/apache2/ssl/munkibuilds.org/private_nopassphrase.key
 	SSLCertificateChainFile /etc/apache2/ssl/munkibuilds.org/intermediate.crt 
 
-	Alias /custom-icons/ /usr/local/share/apache2/icons/
+	Alias /custom-icons/ /mnt/munki_repo/builds/_icons/
 	<Directory />
 		Options FollowSymLinks
 		AllowOverride All
 
-  #      <IfModule mod_autoindex.c>
+       <IfModule mod_autoindex.c>
             Options Indexes FollowSymLinks
             IndexOptions FancyIndexing 
             IndexOptions IconsAreLinks 
             IndexOptions IconWidth=16 
             IndexOptions IconHeight=16
-	    IndexOptions DescriptionWidth=*
+	        IndexOptions DescriptionWidth=*
 			IndexOptions NameWidth=30
 #			IndexOptions SuppressDescription
 			IndexOptions SuppressHTMLPreamble
             IndexOrderDefault Descending Name
 			
 			HeaderName /header.html
-	#		IndexStyleSheet "/style.css"
-			IndexIgnore favicon.ico *.css README.html header.html logo.jpg latest.sh
+			IndexIgnore _icons favicon.ico *.css README.html header.html logo.jpg latest.sh
 
 			AddIcon /custom-icons/folder16.png ^^DIRECTORY^^
 			AddIcon /custom-icons/hd16.png .dmg
 			AddIcon /custom-icons/log16.png .log
 			AddIcon /custom-icons/txt16.png .txt
+			AddIcon /custom-icons/pkg16.png .pkg
 			DefaultIcon /custom-icons/genericdoc16.png
-    #    </ifModule>
-
-
+       </IfModule>
 	</Directory>
-
-	ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
-	<Directory "/usr/lib/cgi-bin">
-		AllowOverride None
-		Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
-		Order allow,deny
-		Allow from all
-	</Directory>
-
-	
-	ErrorLog ${APACHE_LOG_DIR}/error.log
-
-	# Possible values include: debug, info, notice, warn, error, crit,
-	# alert, emerg.
-	LogLevel warn
 
 	CustomLog ${APACHE_LOG_DIR}/munkibuilds.org-ssl-access.log combined
 
@@ -62,56 +45,6 @@
 
 <VirtualHost *:80>
 	ServerName munkibuilds.org
-	HostnameLookups On
-	DocumentRoot /mnt/munki_repo/builds
-
-	Alias /custom-icons/ /usr/local/share/apache2/icons/
-
-	<Directory />
-		Options FollowSymLinks
-		AllowOverride All
-
-  #      <IfModule mod_autoindex.c>
-            Options Indexes FollowSymLinks
-            IndexOptions FancyIndexing 
-            IndexOptions IconsAreLinks 
-            IndexOptions IconWidth=16 
-            IndexOptions IconHeight=16
-	    IndexOptions DescriptionWidth=*
-			IndexOptions NameWidth=30
-#			IndexOptions SuppressDescription
-			IndexOptions SuppressHTMLPreamble
-            IndexOrderDefault Descending Name
-			
-			HeaderName /header.html
-	#		IndexStyleSheet "/style.css"
-			IndexIgnore favicon.ico *.css README.html header.html logo.jpg latest.sh
-
-			AddIcon /custom-icons/folder16.png ^^DIRECTORY^^
-			AddIcon /custom-icons/hd16.png .dmg
-			AddIcon /custom-icons/log16.png .log
-			AddIcon /custom-icons/txt16.png .txt
-			DefaultIcon /custom-icons/genericdoc16.png
-    #    </ifModule>
-
-
-	</Directory>
-
-	ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
-	<Directory "/usr/lib/cgi-bin">
-		AllowOverride None
-		Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
-		Order allow,deny
-		Allow from all
-	</Directory>
-
-	
-	ErrorLog ${APACHE_LOG_DIR}/error.log
-
-	# Possible values include: debug, info, notice, warn, error, crit,
-	# alert, emerg.
-	LogLevel warn
-
+	Redirect permanent / https://munkibuilds.org/
 	CustomLog ${APACHE_LOG_DIR}/munkibuilds.org-access.log combined
-
 </VirtualHost>
