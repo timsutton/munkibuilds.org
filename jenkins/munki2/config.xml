@@ -1,0 +1,224 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Building Munki tools from code.google.com.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@1.5.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <name></name>
+        <refspec></refspec>
+        <url>https://code.google.com/p/munki</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>Munki2</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <disableSubmodules>false</disableSubmodules>
+    <recursiveSubmodules>false</recursiveSubmodules>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <authorOrCommitter>false</authorOrCommitter>
+    <clean>false</clean>
+    <wipeOutWorkspace>false</wipeOutWorkspace>
+    <pruneBranches>false</pruneBranches>
+    <remotePoll>false</remotePoll>
+    <ignoreNotifyCommit>false</ignoreNotifyCommit>
+    <useShallowClone>false</useShallowClone>
+    <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+    <gitTool>Default</gitTool>
+    <submoduleCfg class="list"/>
+    <relativeTargetDir></relativeTargetDir>
+    <reference></reference>
+    <excludedRegions></excludedRegions>
+    <excludedUsers></excludedUsers>
+    <gitConfigName></gitConfigName>
+    <gitConfigEmail></gitConfigEmail>
+    <skipTag>false</skipTag>
+    <includedRegions></includedRegions>
+    <scmName></scmName>
+  </scm>
+  <assignedNode>macmini-2009</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector">
+    <hudson.triggers.SCMTrigger>
+      <spec>*/2 * * * *</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/git/bin
+APPNAME=munkitools
+BUILDDIR=&quot;$WORKSPACE/build&quot;
+BUILDLOG=&quot;$BUILDDIR/build.log&quot;
+PROPFILE=&quot;build.properties&quot;
+CHANGESFILE=&quot;$BUILDDIR/changes.txt&quot;
+README=&quot;$BUILDDIR/README.html&quot;
+GIT=/usr/bin/git
+HDIUTIL=/usr/bin/hdiutil
+LASTHASH=$($GIT rev-parse HEAD)
+
+rm -rf &quot;$BUILDDIR&quot;
+mkdir &quot;$BUILDDIR&quot;
+
+$GIT show &gt; &quot;$CHANGESFILE&quot;
+
+# Set up the readme for the fancy index
+echo &quot;&lt;br&gt;&quot; &gt; &quot;$README&quot;
+
+$GIT log --date=short --format=format:&quot;%an - %ad&lt;br&gt;&lt;br&gt;%s&lt;br&gt;%b&quot; -n 1 &gt;&gt; &quot;$README&quot;
+echo &quot;&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
+echo &quot;More details: &lt;a href=\&quot;http://code.google.com/p/munki/source/detail?r=$LASTHASH\&quot;&gt;$LASTHASH&lt;/a&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
+
+
+# Run the munki build script
+sudo code/tools/make_munki_mpkg.sh -o &quot;$BUILDDIR&quot; 2&gt;&amp;1 | tee &quot;$BUILDLOG&quot;
+
+# More Readme stuff
+echo &quot;Munki component versions:&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
+# Grep the build log for the component versions packaged, dump them into the Index readme
+grep &quot;Packaging&quot; &quot;$BUILDLOG&quot; | cut -d &apos; &apos; -f2 | sed -e &apos;s/munkitools_//g&apos; -e &apos;s/\.pkg//g&apos; -e &apos;s/-/\: /g&apos; -e &apos;s/$/\&lt;br\&gt;/g&apos; &gt;&gt; &quot;$README&quot;
+
+# We need to clean this ourselves because the sudo build creates files owned by root
+sudo rm -Rf code
+
+
+# Store info about the built package
+PKGVERSION=$(grep &quot;metapackage version&quot; &quot;$BUILDLOG&quot; | awk &apos;{print $3}&apos;)
+BUILT_PKG_NAME=&quot;$APPNAME-$PKGVERSION.pkg&quot;
+BUILT_PKG_PATH=&quot;$BUILDDIR/$BUILT_PKG_NAME&quot;
+
+# Store stuff in properties
+echo &quot;PKGVERSION=$PKGVERSION&quot; &gt; &quot;$PROPFILE&quot;
+echo &quot;APPNAME=$APPNAME&quot; &gt;&gt; &quot;$PROPFILE&quot;
+echo &quot;BUILDDIR=$BUILDDIR&quot; &gt;&gt; &quot;$PROPFILE&quot;
+echo &quot;BUILDLOG=$BUILDLOG&quot; &gt;&gt; &quot;$PROPFILE&quot;
+echo &quot;BUILT_PKG_NAME=$BUILT_PKG_NAME&quot; &gt;&gt; &quot;$PROPFILE&quot;
+
+# Checksumming
+MD5=$(md5 -q &quot;$BUILT_PKG_PATH&quot;)
+echo &quot;$MD5&quot; &gt; &quot;$BUILDDIR/MD5&quot;
+echo &quot;&lt;br&gt;&lt;br&gt;MD5: $MD5&quot; &gt;&gt; &quot;$README&quot;
+
+# Chown back to jenkins user so it can clean itself
+sudo chown -R &quot;$USER&quot; &quot;$WORKSPACE&quot;</command>
+    </hudson.tasks.Shell>
+    <EnvInjectBuilder plugin="envinject@1.88">
+      <info>
+        <propertiesFilePath>build.properties</propertiesFilePath>
+      </info>
+    </EnvInjectBuilder>
+    <hudson.tasks.Shell>
+      <command>README=&quot;$BUILDDIR/README&quot;
+VERINFO=&quot;$BUILDDIR/verinfo&quot;
+
+echo &quot;&lt;html&gt;&quot; &gt; &quot;$README&quot;
+echo &quot;&lt;body&gt;&quot; &gt;&gt; &quot;$README&quot;
+grep &quot;version: [0-9]&quot; &quot;$BUILDLOG&quot; &gt; &quot;$VERINFO&quot;
+cat &quot;$VERINFO&quot; &gt;&gt; &quot;$README&quot;
+echo &quot;&lt;/body&gt;&quot; &gt;&gt; &quot;$README&quot;
+echo &quot;&lt;/html&gt;&quot; &gt;&gt; &quot;$README&quot;</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>build/*.pkg, build/*.log, build/*.txt, build/*.html, build/MD5</artifacts>
+      <latestOnly>false</latestOnly>
+      <allowEmptyArchive>false</allowEmptyArchive>
+    </hudson.tasks.ArtifactArchiver>
+    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.34">
+      <recipientList>timothy.sutton@concordia.ca</recipientList>
+      <configuredTriggers>
+        <hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
+          <email>
+            <recipientList></recipientList>
+            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+            <body>$PROJECT_DEFAULT_CONTENT</body>
+            <sendToDevelopers>false</sendToDevelopers>
+            <sendToRequester>false</sendToRequester>
+            <includeCulprits>false</includeCulprits>
+            <sendToRecipientList>true</sendToRecipientList>
+            <attachmentsPattern></attachmentsPattern>
+            <attachBuildLog>false</attachBuildLog>
+            <compressBuildLog>false</compressBuildLog>
+            <replyTo></replyTo>
+            <contentType>project</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
+        <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+          <email>
+            <recipientList></recipientList>
+            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+            <body>$PROJECT_DEFAULT_CONTENT</body>
+            <sendToDevelopers>false</sendToDevelopers>
+            <sendToRequester>false</sendToRequester>
+            <includeCulprits>false</includeCulprits>
+            <sendToRecipientList>true</sendToRecipientList>
+            <attachmentsPattern></attachmentsPattern>
+            <attachBuildLog>false</attachBuildLog>
+            <compressBuildLog>false</compressBuildLog>
+            <replyTo></replyTo>
+            <contentType>project</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+      </configuredTriggers>
+      <contentType>text/plain</contentType>
+      <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
+      <defaultContent>http://munkibuilds.org/${PKGVERSION}
+
+${JENKINS_URL}
+
+${CHANGES}
+</defaultContent>
+      <attachmentsPattern></attachmentsPattern>
+      <presendScript></presendScript>
+      <attachBuildLog>false</attachBuildLog>
+      <compressBuildLog>false</compressBuildLog>
+      <replyTo></replyTo>
+      <saveOutput>false</saveOutput>
+    </hudson.plugins.emailext.ExtendedEmailPublisher>
+    <jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin plugin="publish-over-ssh@1.10">
+      <consolePrefix>SSH: </consolePrefix>
+      <delegate>
+        <publishers>
+          <jenkins.plugins.publish__over__ssh.BapSshPublisher>
+            <configName>munkibuilds.org</configName>
+            <verbose>false</verbose>
+            <transfers>
+              <jenkins.plugins.publish__over__ssh.BapSshTransfer>
+                <remoteDirectory>$PKGVERSION</remoteDirectory>
+                <sourceFiles>build/*.pkg, build/*.log, build/*.txt, build/*.html, build/MD5</sourceFiles>
+                <excludes></excludes>
+                <removePrefix>build</removePrefix>
+                <remoteDirectorySDF>false</remoteDirectorySDF>
+                <flatten>false</flatten>
+                <cleanRemote>false</cleanRemote>
+                <noDefaultExcludes>false</noDefaultExcludes>
+                <makeEmptyDirs>false</makeEmptyDirs>
+                <patternSeparator>[, ]+</patternSeparator>
+                <execCommand>ln -f -s /mnt/munki_repo/builds/$PKGVERSION/$BUILT_PKG_NAME /mnt/munki_repo/builds/munkitools2-latest.pkg</execCommand>
+                <execTimeout>120000</execTimeout>
+                <usePty>false</usePty>
+              </jenkins.plugins.publish__over__ssh.BapSshTransfer>
+            </transfers>
+            <useWorkspaceInPromotion>false</useWorkspaceInPromotion>
+            <usePromotionTimestamp>false</usePromotionTimestamp>
+          </jenkins.plugins.publish__over__ssh.BapSshPublisher>
+        </publishers>
+        <continueOnError>false</continueOnError>
+        <failOnError>false</failOnError>
+        <alwaysPublishFromMaster>false</alwaysPublishFromMaster>
+        <hostConfigurationAccess class="jenkins.plugins.publish_over_ssh.BapSshPublisherPlugin" reference="../.."/>
+      </delegate>
+    </jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin>
+  </publishers>
+  <buildWrappers/>
+</project>
