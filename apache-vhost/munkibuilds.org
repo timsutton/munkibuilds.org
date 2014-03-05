@@ -27,7 +27,7 @@
             IndexOrderDefault Descending Name
 			
 			HeaderName /header.html
-			IndexIgnore _icons favicon.ico *.css README.html header.html logo.jpg latest.sh
+			IndexIgnore _icons favicon.ico *.css README.html header.html logo.jpg *.sh
 
 			AddIcon /custom-icons/folder16.png ^^DIRECTORY^^
 			AddIcon /custom-icons/hd16.png .dmg
