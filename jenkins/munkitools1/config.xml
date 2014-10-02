@@ -1,53 +1,39 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>Building Munki tools from code.google.com.</description>
+  <description>Building Munki1 branch from GitHub.com</description>
   <keepDependencies>false</keepDependencies>
   <properties/>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@1.4.0">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.2.6">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
-        <name></name>
-        <refspec></refspec>
-        <url>https://code.google.com/p/munki</url>
+        <url>https://github.com/munki/munki</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>master</name>
+        <name>Munki1</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
-    <disableSubmodules>false</disableSubmodules>
-    <recursiveSubmodules>false</recursiveSubmodules>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
-    <authorOrCommitter>false</authorOrCommitter>
-    <clean>false</clean>
-    <wipeOutWorkspace>false</wipeOutWorkspace>
-    <pruneBranches>false</pruneBranches>
-    <remotePoll>false</remotePoll>
-    <ignoreNotifyCommit>false</ignoreNotifyCommit>
-    <useShallowClone>false</useShallowClone>
-    <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
-    <gitTool>Default</gitTool>
     <submoduleCfg class="list"/>
-    <relativeTargetDir></relativeTargetDir>
-    <reference></reference>
-    <excludedRegions></excludedRegions>
-    <excludedUsers></excludedUsers>
-    <gitConfigName></gitConfigName>
-    <gitConfigEmail></gitConfigEmail>
-    <skipTag>false</skipTag>
-    <includedRegions></includedRegions>
-    <scmName></scmName>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.PerBuildTag/>
+      <hudson.plugins.git.extensions.impl.PathRestriction>
+        <includedRegions></includedRegions>
+        <excludedRegions>README.md</excludedRegions>
+      </hudson.plugins.git.extensions.impl.PathRestriction>
+    </extensions>
   </scm>
-  <canRoam>true</canRoam>
+  <assignedNode>snowleopard</assignedNode>
+  <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.SCMTrigger>
-      <spec>* * * * *</spec>
+      <spec>H/5 * * * *</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -75,7 +61,7 @@ echo &quot;&lt;br&gt;&quot; &gt; &quot;$README&quot;
 
 $GIT log --date=short --format=format:&quot;%an - %ad&lt;br&gt;&lt;br&gt;%s&lt;br&gt;%b&quot; -n 1 &gt;&gt; &quot;$README&quot;
 echo &quot;&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
-echo &quot;More details: &lt;a href=\&quot;http://code.google.com/p/munki/source/detail?r=$LASTHASH\&quot;&gt;$LASTHASH&lt;/a&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
+echo &quot;More details: &lt;a href=\&quot;https://github.com/munki/munki/commit/$LASTHASH\&quot;&gt;$LASTHASH&lt;/a&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
 
 
 # Run the munki build script
@@ -113,7 +99,7 @@ echo &quot;&lt;br&gt;&lt;br&gt;DMG MD5: $DMGMD5&quot; &gt;&gt; &quot;$README&quo
 # Chown back to jenkins so it can clean itself
 sudo chown -R jenkins &quot;$WORKSPACE&quot;</command>
     </hudson.tasks.Shell>
-    <EnvInjectBuilder plugin="envinject@1.87">
+    <EnvInjectBuilder plugin="envinject@1.90">
       <info>
         <propertiesFilePath>build.properties</propertiesFilePath>
       </info>
@@ -134,28 +120,24 @@ echo &quot;&lt;/html&gt;&quot; &gt;&gt; &quot;$README&quot;</command>
     <hudson.tasks.ArtifactArchiver>
       <artifacts>build/*.dmg, build/*.log, build/*.txt, build/*.html, build/MD5</artifacts>
       <latestOnly>false</latestOnly>
+      <allowEmptyArchive>false</allowEmptyArchive>
     </hudson.tasks.ArtifactArchiver>
-    <hudson.tasks.Mailer plugin="mailer@1.5">
-      <recipients>info@munkibuilds.org</recipients>
-      <dontNotifyEveryUnstableBuild>true</dontNotifyEveryUnstableBuild>
-      <sendToIndividuals>false</sendToIndividuals>
-    </hudson.tasks.Mailer>
-    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.30.2">
-      <recipientList>$DEFAULT_RECIPIENTS</recipientList>
+    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.38.2">
+      <recipientList>timothy.sutton@concordia.ca</recipientList>
       <configuredTriggers>
         <hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
           <email>
             <recipientList></recipientList>
             <subject>$PROJECT_DEFAULT_SUBJECT</subject>
             <body>$PROJECT_DEFAULT_CONTENT</body>
-            <sendToDevelopers>false</sendToDevelopers>
-            <sendToRequester>false</sendToRequester>
-            <includeCulprits>false</includeCulprits>
-            <sendToRecipientList>true</sendToRecipientList>
+            <recipientProviders>
+              <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
+            </recipientProviders>
             <attachmentsPattern></attachmentsPattern>
             <attachBuildLog>false</attachBuildLog>
             <compressBuildLog>false</compressBuildLog>
             <replyTo></replyTo>
+            <contentType>project</contentType>
           </email>
         </hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
         <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
@@ -163,20 +145,22 @@ echo &quot;&lt;/html&gt;&quot; &gt;&gt; &quot;$README&quot;</command>
             <recipientList></recipientList>
             <subject>$PROJECT_DEFAULT_SUBJECT</subject>
             <body>$PROJECT_DEFAULT_CONTENT</body>
-            <sendToDevelopers>false</sendToDevelopers>
-            <sendToRequester>false</sendToRequester>
-            <includeCulprits>false</includeCulprits>
-            <sendToRecipientList>true</sendToRecipientList>
+            <recipientProviders>
+              <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
+            </recipientProviders>
             <attachmentsPattern></attachmentsPattern>
             <attachBuildLog>false</attachBuildLog>
             <compressBuildLog>false</compressBuildLog>
             <replyTo></replyTo>
+            <contentType>project</contentType>
           </email>
         </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
       </configuredTriggers>
       <contentType>text/plain</contentType>
       <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
       <defaultContent>http://munkibuilds.org/${MPKGVERSION}
+
+${JENKINS_URL}
 
 ${CHANGES}
 </defaultContent>
@@ -187,7 +171,7 @@ ${CHANGES}
       <replyTo></replyTo>
       <saveOutput>false</saveOutput>
     </hudson.plugins.emailext.ExtendedEmailPublisher>
-    <jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin plugin="publish-over-ssh@1.10">
+    <jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin plugin="publish-over-ssh@1.11">
       <consolePrefix>SSH: </consolePrefix>
       <delegate>
         <publishers>
@@ -206,7 +190,7 @@ ${CHANGES}
                 <noDefaultExcludes>false</noDefaultExcludes>
                 <makeEmptyDirs>false</makeEmptyDirs>
                 <patternSeparator>[, ]+</patternSeparator>
-                <execCommand>ln -f -s /mnt/munki_repo/builds/$MPKGVERSION/munkitools-$MPKGVERSION.dmg /mnt/munki_repo/builds/munkitools-latest.dmg</execCommand>
+                <execCommand>cd /var/www/munkibuilds.org; ln -f -s $MPKGVERSION/munkitools-$MPKGVERSION.dmg munkitools-latest.dmg</execCommand>
                 <execTimeout>120000</execTimeout>
                 <usePty>false</usePty>
               </jenkins.plugins.publish__over__ssh.BapSshTransfer>

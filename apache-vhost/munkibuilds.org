@@ -1,18 +1,18 @@
 <IfModule mod_ssl.c>
 <VirtualHost *:443>
-	ServerName munkibuilds.org
-	HostnameLookups On
-	DocumentRoot /mnt/munki_repo/builds
-	SSLEngine on
-	SSLProtocol +SSLv3 +TLSv1
-	SSLCertificateFile /etc/apache2/ssl/munkibuilds.org/cert.crt 
-	SSLCertificateKeyFile /etc/apache2/ssl/munkibuilds.org/private_nopassphrase.key
-	SSLCertificateChainFile /etc/apache2/ssl/munkibuilds.org/intermediate.crt 
+    ServerName munkibuilds.org
+    HostnameLookups On
+    DocumentRoot /var/www/munkibuilds.org
+    SSLEngine on
+    SSLProtocol +SSLv3 +TLSv1 -SSLv2
+    SSLCertificateFile /etc/apache2/ssl/munkibuilds.org/cert.crt 
+    SSLCertificateKeyFile /etc/apache2/ssl/munkibuilds.org/private_nopassphrase.key
+    SSLCertificateChainFile /etc/apache2/ssl/munkibuilds.org/intermediate.crt 
 
-	Alias /custom-icons/ /mnt/munki_repo/builds/_icons/
-	<Directory />
-		Options FollowSymLinks
-		AllowOverride All
+    Alias /custom-icons/ /var/www/munkibuilds.org/_icons/
+    <Directory />
+        Options FollowSymLinks
+        AllowOverride All
 
        <IfModule mod_autoindex.c>
             Options Indexes FollowSymLinks
@@ -20,31 +20,31 @@
             IndexOptions IconsAreLinks 
             IndexOptions IconWidth=16 
             IndexOptions IconHeight=16
-	        IndexOptions DescriptionWidth=*
-			IndexOptions NameWidth=30
-#			IndexOptions SuppressDescription
-			IndexOptions SuppressHTMLPreamble
+            IndexOptions DescriptionWidth=*
+            IndexOptions NameWidth=30
+#           IndexOptions SuppressDescription
+            IndexOptions SuppressHTMLPreamble
             IndexOrderDefault Descending Name
-			
-			HeaderName /header.html
-			IndexIgnore _icons favicon.ico *.css README.html header.html logo.jpg *.sh
+            
+            HeaderName /header.html
+            IndexIgnore _icons favicon.ico *.css README.html header.html logo.jpg *.sh
 
-			AddIcon /custom-icons/folder16.png ^^DIRECTORY^^
-			AddIcon /custom-icons/hd16.png .dmg
-			AddIcon /custom-icons/log16.png .log
-			AddIcon /custom-icons/txt16.png .txt
-			AddIcon /custom-icons/pkg16.png .pkg
-			DefaultIcon /custom-icons/genericdoc16.png
+            AddIcon /custom-icons/folder16.png ^^DIRECTORY^^
+            AddIcon /custom-icons/hd16.png .dmg
+            AddIcon /custom-icons/log16.png .log
+            AddIcon /custom-icons/txt16.png .txt
+            AddIcon /custom-icons/pkg16.png .pkg
+            DefaultIcon /custom-icons/genericdoc16.png
        </IfModule>
-	</Directory>
+    </Directory>
 
-	CustomLog ${APACHE_LOG_DIR}/munkibuilds.org-ssl-access.log combined
+    CustomLog ${APACHE_LOG_DIR}/munkibuilds.org-ssl-access.log combined
 
 </VirtualHost>
 </IfModule>
 
 <VirtualHost *:80>
-	ServerName munkibuilds.org
-	Redirect permanent / https://munkibuilds.org/
-	CustomLog ${APACHE_LOG_DIR}/munkibuilds.org-access.log combined
+    ServerName munkibuilds.org
+    Redirect permanent / https://munkibuilds.org/
+    CustomLog ${APACHE_LOG_DIR}/munkibuilds.org-access.log combined
 </VirtualHost>
