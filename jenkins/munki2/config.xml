@@ -34,6 +34,9 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
+      <command>sudo ./runtests.sh</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
       <command>PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/git/bin
 APPNAME=munkitools
 BUILDDIR=&quot;$WORKSPACE/build&quot;
