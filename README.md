@@ -1,6 +1,6 @@
 # munkibuilds.org
 
-This repo hosts the configuration files for [munkibuilds.org](https://munkibuilds.org), a Jenkins job and Apache-served website that makes available automatic builds of [Munki](https://code.google.com/p/munki).
+This repo hosts the configuration files for [munkibuilds.org](https://munkibuilds.org), website that makes available automatic builds of [Munki](https://github.com/munki/munki).
 
 The (messy, I know) configuration files are organized in the following folders:
 
