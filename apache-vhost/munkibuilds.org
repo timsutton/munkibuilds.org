@@ -4,10 +4,14 @@
     HostnameLookups On
     DocumentRoot /var/www/munkibuilds.org
     SSLEngine on
-    SSLProtocol +SSLv3 +TLSv1 -SSLv2
+    SSLProtocol All -SSLv3 -SSLv2
+    SSLHonorCipherOrder on
+    SSLCipherSuite EECDH+AES:EDH+AES:-SHA1:EECDH+AES256:EDH+AES256:AES256-SHA:EECDH+RC4:EDH+RC4:!aNULL:!eNULL:!EXP:!LOW:!MD5
     SSLCertificateFile /etc/apache2/ssl/munkibuilds.org/cert.crt 
     SSLCertificateKeyFile /etc/apache2/ssl/munkibuilds.org/private_nopassphrase.key
     SSLCertificateChainFile /etc/apache2/ssl/munkibuilds.org/intermediate.crt 
+
+    Header add Strict-Transport-Security "max-age=15768000"
 
     Alias /custom-icons/ /var/www/munkibuilds.org/_icons/
     <Directory />
