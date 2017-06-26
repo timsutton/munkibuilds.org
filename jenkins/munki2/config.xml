@@ -1,10 +1,23 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>Munki 2 (master) branch from GitHub.</description>
+  <description>Munki from GitHub.</description>
   <keepDependencies>false</keepDependencies>
-  <properties/>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.2.6">
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>-1</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>20</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.25">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.3.1">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
@@ -13,35 +26,39 @@
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>refs/heads/master</name>
+        <name>**</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
     <submoduleCfg class="list"/>
-    <extensions/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.PruneStaleBranch/>
+      <hudson.plugins.git.extensions.impl.PathRestriction>
+        <includedRegions></includedRegions>
+        <excludedRegions>tests/*</excludedRegions>
+      </hudson.plugins.git.extensions.impl.PathRestriction>
+    </extensions>
   </scm>
-  <assignedNode>mavericks</assignedNode>
+  <assignedNode>elcap</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.SCMTrigger>
-      <spec>H/5 * * * *</spec>
+      <spec>H/3 * * * *</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo ./runtests.sh</command>
-    </hudson.tasks.Shell>
-    <hudson.tasks.Shell>
-      <command>PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/git/bin
+      <command>#!/bin/sh -eux
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/git/bin
 APPNAME=munkitools
 BUILDDIR=&quot;$WORKSPACE/build&quot;
 BUILDLOG=&quot;$BUILDDIR/build.log&quot;
-PROPFILE=&quot;build.properties&quot;
 CHANGESFILE=&quot;$BUILDDIR/changes.txt&quot;
 README=&quot;$BUILDDIR/README.html&quot;
 GIT=/usr/bin/git
@@ -60,6 +77,7 @@ $GIT log --date=short --format=format:&quot;%an - %ad&lt;br&gt;&lt;br&gt;%s&lt;b
 echo &quot;&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
 echo &quot;More details: &lt;a href=\&quot;https://github.com/munki/munki/commit/$LASTHASH\&quot;&gt;$LASTHASH&lt;/a&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&quot; &gt;&gt; &quot;$README&quot;
 
+sudo xcode-select -s /Applications/Xcode.app
 
 # Run the munki build script
 sudo code/tools/make_munki_mpkg.sh -o &quot;$BUILDDIR&quot; 2&gt;&amp;1 | tee &quot;$BUILDLOG&quot;
@@ -78,12 +96,30 @@ PKGVERSION=$(grep &quot;metapackage version&quot; &quot;$BUILDLOG&quot; | awk &a
 BUILT_PKG_NAME=&quot;$APPNAME-$PKGVERSION.pkg&quot;
 BUILT_PKG_PATH=&quot;$BUILDDIR/$BUILT_PKG_NAME&quot;
 
+
+# Determine output directories for publishing alternate branches via SSH
+if [ &quot;$GIT_BRANCH&quot; != &quot;origin/master&quot; ]; then
+  branch=$(echo &quot;$GIT_BRANCH&quot; | awk -F&apos;/&apos; &apos;{print $2}&apos;)
+else
+  branch=master
+fi
+
+if [ &quot;$branch&quot; = &quot;master&quot; ]; then
+  SSH_TARGET_DIR=$PKGVERSION
+else
+  SSH_TARGET_DIR=&quot;_branches/$branch/$PKGVERSION&quot;
+fi
+
+
 # Store stuff in properties
-echo &quot;PKGVERSION=$PKGVERSION&quot; &gt; &quot;$PROPFILE&quot;
-echo &quot;APPNAME=$APPNAME&quot; &gt;&gt; &quot;$PROPFILE&quot;
-echo &quot;BUILDDIR=$BUILDDIR&quot; &gt;&gt; &quot;$PROPFILE&quot;
-echo &quot;BUILDLOG=$BUILDLOG&quot; &gt;&gt; &quot;$PROPFILE&quot;
-echo &quot;BUILT_PKG_NAME=$BUILT_PKG_NAME&quot; &gt;&gt; &quot;$PROPFILE&quot;
+cat &gt; build.properties &lt;&lt; EOF
+PKGVERSION=$PKGVERSION
+APPNAME=$APPNAME
+BUILDDIR=$BUILDDIR
+BUILDLOG=$BUILDLOG
+BUILT_PKG_NAME=$BUILT_PKG_NAME
+SSH_TARGET_DIR=$SSH_TARGET_DIR
+EOF
 
 # Checksumming
 MD5=$(md5 -q &quot;$BUILT_PKG_PATH&quot;)
@@ -91,9 +127,10 @@ echo &quot;$MD5&quot; &gt; &quot;$BUILDDIR/MD5&quot;
 echo &quot;&lt;br&gt;&lt;br&gt;MD5: $MD5&quot; &gt;&gt; &quot;$README&quot;
 
 # Chown back to jenkins user so it can clean itself
-sudo chown -R &quot;$USER&quot; &quot;$WORKSPACE&quot;</command>
+sudo chown -R &quot;$USER&quot; &quot;$WORKSPACE&quot;
+</command>
     </hudson.tasks.Shell>
-    <EnvInjectBuilder plugin="envinject@1.90">
+    <EnvInjectBuilder plugin="envinject@2.1.1">
       <info>
         <propertiesFilePath>build.properties</propertiesFilePath>
       </info>
@@ -113,15 +150,72 @@ echo &quot;&lt;/html&gt;&quot; &gt;&gt; &quot;$README&quot;</command>
   <publishers>
     <hudson.tasks.ArtifactArchiver>
       <artifacts>build/*.pkg, build/*.log, build/*.txt, build/*.html, build/MD5</artifacts>
-      <latestOnly>false</latestOnly>
       <allowEmptyArchive>false</allowEmptyArchive>
+      <onlyIfSuccessful>false</onlyIfSuccessful>
+      <fingerprint>false</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+      <caseSensitive>true</caseSensitive>
     </hudson.tasks.ArtifactArchiver>
-    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.38.2">
+    <jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin plugin="publish-over-ssh@1.17">
+      <consolePrefix>SSH: </consolePrefix>
+      <delegate>
+        <publishers>
+          <jenkins.plugins.publish__over__ssh.BapSshPublisher>
+            <configName>munkibuilds.org</configName>
+            <verbose>false</verbose>
+            <transfers>
+              <jenkins.plugins.publish__over__ssh.BapSshTransfer>
+                <remoteDirectory>$SSH_TARGET_DIR</remoteDirectory>
+                <sourceFiles>build/*.pkg, build/*.log, build/*.txt, build/*.html, build/MD5</sourceFiles>
+                <excludes></excludes>
+                <removePrefix>build</removePrefix>
+                <remoteDirectorySDF>false</remoteDirectorySDF>
+                <flatten>false</flatten>
+                <cleanRemote>false</cleanRemote>
+                <noDefaultExcludes>false</noDefaultExcludes>
+                <makeEmptyDirs>false</makeEmptyDirs>
+                <patternSeparator>[, ]+</patternSeparator>
+                <execCommand>if [ $GIT_BRANCH = &quot;origin/master&quot; ]; then cd /var/www/munkibuilds.org; ln -f -s $SSH_TARGET_DIR/$BUILT_PKG_NAME munkitools3-latest.pkg; fi</execCommand>
+                <execTimeout>120000</execTimeout>
+                <usePty>false</usePty>
+                <useAgentForwarding>false</useAgentForwarding>
+              </jenkins.plugins.publish__over__ssh.BapSshTransfer>
+            </transfers>
+            <useWorkspaceInPromotion>false</useWorkspaceInPromotion>
+            <usePromotionTimestamp>false</usePromotionTimestamp>
+          </jenkins.plugins.publish__over__ssh.BapSshPublisher>
+        </publishers>
+        <continueOnError>false</continueOnError>
+        <failOnError>true</failOnError>
+        <alwaysPublishFromMaster>false</alwaysPublishFromMaster>
+        <hostConfigurationAccess class="jenkins.plugins.publish_over_ssh.BapSshPublisherPlugin" reference="../.."/>
+      </delegate>
+    </jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin>
+    <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
+      <tasks>
+        <hudson.plugins.postbuildtask.TaskProperties>
+          <logTexts>
+            <hudson.plugins.postbuildtask.LogProperties>
+              <logText>.*</logText>
+              <operator>AND</operator>
+            </hudson.plugins.postbuildtask.LogProperties>
+          </logTexts>
+          <EscalateStatus>false</EscalateStatus>
+          <RunIfJobSuccessful>true</RunIfJobSuccessful>
+          <script>#!/bin/sh&#xd;
+&#xd;
+curl -X POST \&#xd;
+--data-urlencode &apos;payload={&quot;text&quot;: &quot;New Munki build: https://munkibuilds.org/&apos;${SSH_TARGET_DIR}&apos;&quot;, &quot;channel&quot;: &quot;#munki&quot;, &quot;username&quot;: &quot;munkibuilds&quot;}&apos; \&#xd;
+https://hooks.slack.com/services/XXXXX/XXXXX/sekrit&#xd;
+</script>
+        </hudson.plugins.postbuildtask.TaskProperties>
+      </tasks>
+    </hudson.plugins.postbuildtask.PostbuildTask>
+    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.57.2">
       <recipientList>$DEFAULT_RECIPIENTS</recipientList>
       <configuredTriggers>
         <hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
           <email>
-            <recipientList></recipientList>
             <subject>$PROJECT_DEFAULT_SUBJECT</subject>
             <body>$PROJECT_DEFAULT_CONTENT</body>
             <recipientProviders>
@@ -130,13 +224,11 @@ echo &quot;&lt;/html&gt;&quot; &gt;&gt; &quot;$README&quot;</command>
             <attachmentsPattern></attachmentsPattern>
             <attachBuildLog>false</attachBuildLog>
             <compressBuildLog>false</compressBuildLog>
-            <replyTo></replyTo>
             <contentType>project</contentType>
           </email>
         </hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
         <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
           <email>
-            <recipientList></recipientList>
             <subject>$PROJECT_DEFAULT_SUBJECT</subject>
             <body>$PROJECT_DEFAULT_CONTENT</body>
             <recipientProviders>
@@ -145,7 +237,6 @@ echo &quot;&lt;/html&gt;&quot; &gt;&gt; &quot;$README&quot;</command>
             <attachmentsPattern></attachmentsPattern>
             <attachBuildLog>false</attachBuildLog>
             <compressBuildLog>false</compressBuildLog>
-            <replyTo></replyTo>
             <contentType>project</contentType>
           </email>
         </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
@@ -160,45 +251,13 @@ ${CHANGES}
 </defaultContent>
       <attachmentsPattern></attachmentsPattern>
       <presendScript></presendScript>
+      <postsendScript></postsendScript>
       <attachBuildLog>false</attachBuildLog>
       <compressBuildLog>false</compressBuildLog>
       <replyTo></replyTo>
       <saveOutput>false</saveOutput>
+      <disabled>false</disabled>
     </hudson.plugins.emailext.ExtendedEmailPublisher>
-    <jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin plugin="publish-over-ssh@1.11">
-      <consolePrefix>SSH: </consolePrefix>
-      <delegate>
-        <publishers>
-          <jenkins.plugins.publish__over__ssh.BapSshPublisher>
-            <configName>munkibuilds.org</configName>
-            <verbose>false</verbose>
-            <transfers>
-              <jenkins.plugins.publish__over__ssh.BapSshTransfer>
-                <remoteDirectory>$PKGVERSION</remoteDirectory>
-                <sourceFiles>build/*.pkg, build/*.log, build/*.txt, build/*.html, build/MD5</sourceFiles>
-                <excludes></excludes>
-                <removePrefix>build</removePrefix>
-                <remoteDirectorySDF>false</remoteDirectorySDF>
-                <flatten>false</flatten>
-                <cleanRemote>false</cleanRemote>
-                <noDefaultExcludes>false</noDefaultExcludes>
-                <makeEmptyDirs>false</makeEmptyDirs>
-                <patternSeparator>[, ]+</patternSeparator>
-                <execCommand>cd /var/www/munkibuilds.org; ln -f -s $PKGVERSION/$BUILT_PKG_NAME munkitools2-latest.pkg</execCommand>
-                <execTimeout>120000</execTimeout>
-                <usePty>false</usePty>
-              </jenkins.plugins.publish__over__ssh.BapSshTransfer>
-            </transfers>
-            <useWorkspaceInPromotion>false</useWorkspaceInPromotion>
-            <usePromotionTimestamp>false</usePromotionTimestamp>
-          </jenkins.plugins.publish__over__ssh.BapSshPublisher>
-        </publishers>
-        <continueOnError>false</continueOnError>
-        <failOnError>false</failOnError>
-        <alwaysPublishFromMaster>false</alwaysPublishFromMaster>
-        <hostConfigurationAccess class="jenkins.plugins.publish_over_ssh.BapSshPublisherPlugin" reference="../.."/>
-      </delegate>
-    </jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin>
   </publishers>
   <buildWrappers/>
 </project>
